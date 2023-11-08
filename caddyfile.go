@@ -29,6 +29,7 @@ func init() {
 //        use_accelerate
 //        errors [<http code>] [<s3 key to error page>|pass_through]
 //        browse [<template file>]
+//        continue
 //    }
 //
 func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error) {
@@ -83,6 +84,8 @@ parseLoop:
 			b.S3ForcePathStyle = true
 		case "use_accelerate":
 			b.S3UseAccelerate = true
+		case "continue":
+			b.CaddyContinue = true
 		case "browse":
 			b.EnableBrowse = true
 			args := h.RemainingArgs()

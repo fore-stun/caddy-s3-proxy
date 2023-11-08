@@ -77,6 +77,9 @@ type S3Proxy struct {
 	// Set this to `true` to enable S3 Accelerate feature.
 	S3UseAccelerate bool `json:"use_accelerate,omitempty"`
 
+	// Set this to `true` to enable S3 Accelerate feature.
+	CaddyContinue bool `json:"continue,omitempty"`
+
 	client      *s3.S3
 	dirTemplate *template.Template
 	log         *zap.Logger
