@@ -373,7 +373,11 @@ func (p S3Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhtt
 	}
 	if err == nil {
 		// Success!
-		return nil
+		if p.CaddyContinue {
+			return next.ServeHTTP(w, r)
+		} else {
+			return nil
+		}
 	}
 
 	// Make the err a caddyErr if it is not already
