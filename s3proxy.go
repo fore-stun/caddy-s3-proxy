@@ -374,6 +374,12 @@ func (p S3Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhtt
 	if err == nil {
 		// Success!
 		if p.CaddyContinue {
+			var b bytes.Buffer
+			for name, value := range w.Header().Clone() {
+				b.WriteString(name)
+				b.WriteString(strings.Join(value, ","))
+			}
+			p.log.Debug(fmt.Sprintf("Continuing: %s", b))
 			return next.ServeHTTP(w, r)
 		} else {
 			return nil
