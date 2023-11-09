@@ -364,6 +364,7 @@ func (p S3Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhtt
 	switch r.Method {
 	case http.MethodGet:
 		err = p.GetHandler(w, r, fullPath)
+		w.WriteHeader(http.StatusOK)
 	case http.MethodPut:
 		err = p.PutHandler(w, r, fullPath)
 	case http.MethodDelete:
