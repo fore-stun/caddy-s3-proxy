@@ -16,6 +16,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	caddy "github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
@@ -95,8 +96,6 @@ func (S3Proxy) CaddyModule() caddy.ModuleInfo {
 func (p *S3Proxy) Provision(ctx caddy.Context) (err error) {
 	p.log = ctx.Logger(p)
 
-	p.log.Debug("Using local plugin")
-
 	if p.Root == "" {
 		p.Root = "{http.vars.root}"
 	}
@@ -146,20 +145,20 @@ func (p *S3Proxy) Provision(ctx caddy.Context) (err error) {
 		config.S3UseAccelerate = aws.Bool(p.S3UseAccelerate)
 	}
 
-	// sess, err := session.NewSessionWithOptions(session.Options{
-	// 	Profile:           p.Profile,
-	// 	Config:            config,
-	// 	SharedConfigState: session.SharedConfigEnable,
-	// })
-	// if err != nil {
-	// 	p.log.Error("could not create AWS session",
-	// 		zap.String("error", err.Error()),
-	// 	)
-	// 	return err
-	// }
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Profile:           p.Profile,
+		Config:            config,
+		SharedConfigState: session.SharedConfigEnable,
+	})
+	if err != nil {
+		p.log.Error("could not create AWS session",
+			zap.String("error", err.Error()),
+		)
+		return err
+	}
 
-	// // Create S3 service client
-	// p.client = s3.New(sess)
+	// Create S3 service client
+	p.client = s3.New(sess)
 	p.log.Info("S3 proxy initialized for bucket: " + p.Bucket)
 	p.log.Debug("config values",
 		zap.String("endpoint", p.Endpoint),
@@ -374,16 +373,15 @@ func (p S3Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhtt
 	}
 	if err == nil {
 		// Success!
-		var b bytes.Buffer
-		for name, value := range w.Header().Clone() {
-			b.WriteString(name)
-			b.WriteString(strings.Join(value, ","))
-		}
 		if p.CaddyContinue {
+			var b bytes.Buffer
+			for name, value := range w.Header().Clone() {
+				b.WriteString(name)
+				b.WriteString(strings.Join(value, ","))
+			}
 			p.log.Debug(fmt.Sprintf("Continuing: %s", b))
 			return next.ServeHTTP(w, r)
 		} else {
-			p.log.Debug(fmt.Sprintf("Returning: %s", b))
 			return nil
 		}
 	}
@@ -456,18 +454,6 @@ func (p S3Proxy) GetHandler(w http.ResponseWriter, r *http.Request, fullPath str
 	isDir := strings.HasSuffix(fullPath, "/")
 	var obj *s3.GetObjectOutput
 	var err error
-
-	p.log.Debug("Returning early")
-
-	var b bytes.Buffer
-	b.WriteString("This is where the object would be")
-	// r.ContentLength = int64(b.Len())
-	// r.Header.Set("Content-Type", "text/really")
-	w.Header().Set("Content-Type", "text/really")
-	p.setStrHeader(w, "X-Manual", aws.String("manual"))
-	_, err = io.Copy(w, io.NopCloser(bytes.NewReader(b.Bytes())))
-
-	return err
 
 	if isDir && len(p.IndexNames) > 0 {
 		for _, indexPage := range p.IndexNames {
