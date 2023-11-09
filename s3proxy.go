@@ -261,7 +261,7 @@ func (p S3Proxy) PutHandler(w http.ResponseWriter, r *http.Request, key string) 
 		return convertToCaddyError(err)
 	}
 
-	setStrHeader(w, "ETag", po.ETag)
+	p.setStrHeader(w, "ETag", po.ETag)
 
 	return nil
 }
@@ -316,19 +316,19 @@ func (p S3Proxy) BrowseHandler(w http.ResponseWriter, r *http.Request, key strin
 
 func (p S3Proxy) writeResponseFromGetObject(w http.ResponseWriter, obj *s3.GetObjectOutput) error {
 	// Copy headers from AWS response to our response
-	setStrHeader(w, "Cache-Control", obj.CacheControl)
-	setStrHeader(w, "Content-Disposition", obj.ContentDisposition)
-	setStrHeader(w, "Content-Encoding", obj.ContentEncoding)
-	setStrHeader(w, "Content-Language", obj.ContentLanguage)
-	setStrHeader(w, "Content-Range", obj.ContentRange)
-	setStrHeader(w, "Content-Type", obj.ContentType)
-	setStrHeader(w, "ETag", obj.ETag)
-	setStrHeader(w, "Expires", obj.Expires)
-	setTimeHeader(w, "Last-Modified", obj.LastModified)
+	p.setStrHeader(w, "Cache-Control", obj.CacheControl)
+	p.setStrHeader(w, "Content-Disposition", obj.ContentDisposition)
+	p.setStrHeader(w, "Content-Encoding", obj.ContentEncoding)
+	p.setStrHeader(w, "Content-Language", obj.ContentLanguage)
+	p.setStrHeader(w, "Content-Range", obj.ContentRange)
+	p.setStrHeader(w, "Content-Type", obj.ContentType)
+	p.setStrHeader(w, "ETag", obj.ETag)
+	p.setStrHeader(w, "Expires", obj.Expires)
+	p.setTimeHeader(w, "Last-Modified", obj.LastModified)
 
 	// Adds all custom headers which where used on this object
 	for key, value := range obj.Metadata {
-		setStrHeader(w, key, value)
+		p.setStrHeader(w, key, value)
 	}
 
 	var err error
@@ -521,14 +521,16 @@ func (p S3Proxy) GetHandler(w http.ResponseWriter, r *http.Request, fullPath str
 	return p.writeResponseFromGetObject(w, obj)
 }
 
-func setStrHeader(w http.ResponseWriter, key string, value *string) {
+func (p S3Proxy) setStrHeader(w http.ResponseWriter, key string, value *string) {
 	if value != nil && len(*value) > 0 {
+		p.log.Debug(fmt.Sprint("Setting header %s: %s", key, value))
 		w.Header().Add(key, *value)
 	}
 }
 
-func setTimeHeader(w http.ResponseWriter, key string, value *time.Time) {
+func (p S3Proxy) setTimeHeader(w http.ResponseWriter, key string, value *time.Time) {
 	if value != nil && !reflect.DeepEqual(*value, time.Time{}) {
+		p.log.Debug(fmt.Sprint("Setting header %s: %s", key, value))
 		w.Header().Add(key, value.UTC().Format(http.TimeFormat))
 	}
 }
