@@ -335,6 +335,7 @@ func (p S3Proxy) writeResponseFromGetObject(w http.ResponseWriter, obj *s3.GetOb
 	if obj.Body != nil {
 		// io.Copy will set Content-Length
 		w.Header().Del("Content-Length")
+		w.WriteHeader(http.StatusOK)
 		_, err = io.Copy(w, obj.Body)
 	}
 
@@ -364,7 +365,6 @@ func (p S3Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhtt
 	switch r.Method {
 	case http.MethodGet:
 		err = p.GetHandler(w, r, fullPath)
-		w.WriteHeader(http.StatusOK)
 	case http.MethodPut:
 		err = p.PutHandler(w, r, fullPath)
 	case http.MethodDelete:
