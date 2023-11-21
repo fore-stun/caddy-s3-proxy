@@ -259,6 +259,7 @@ func (p S3Proxy) PutHandler(w http.ResponseWriter, r *http.Request, key string) 
 	}
 
 	setStrHeader(w, "ETag", po.ETag)
+	w.WriteHeader(http.StatusCreated)
 
 	return nil
 }
